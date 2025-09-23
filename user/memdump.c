@@ -60,6 +60,22 @@ main(int argc, char *argv[])
 void
 memdump(char *fmt, char *data)
 {
-  // Your code here.
+  // Your code here
+  for (int i = 0; data[i] != '\0'; i++) {
+    unsigned char c = (unsigned char)data[i];
+
+    switch (fmt[0]) {      
+    case 'x':              
+      printf("%02x ", c);
+      break;
+    case 'c':
+      printf("%c", c);
+      break;
+    default:               
+      printf("%02x ", c);
+      break;
+    }
+  }
+  printf("\n");
 
 }
