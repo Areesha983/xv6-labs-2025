@@ -3,6 +3,7 @@
 #include "kernel/types.h"
 #include "user/user.h"
 #include "kernel/fcntl.h"
+#include "kernel/stat.h" 
 
 // Parsed command representation
 #define EXEC  1
@@ -10,8 +11,13 @@
 #define PIPE  3
 #define LIST  4
 #define BACK  5
+#define HISTORY_SIZE 16
 
 #define MAXARGS 10
+
+int strncmp(const char *p, const char *q, uint n);
+static char history[HISTORY_SIZE][128];  // 128 = max command length
+static int history_count = 0;
 
 struct cmd {
   int type;
@@ -134,13 +140,30 @@ runcmd(struct cmd *cmd)
 int
 getcmd(char *buf, int nbuf)
 {
-  write(2, "$ ", 2);
-  memset(buf, 0, nbuf);
-  gets(buf, nbuf);
-  if(buf[0] == 0) // EOF
-    return -1;
-  return 0;
+struct stat st;
+    if (fstat(0, &st) >= 0 && st.type == T_DEVICE) {
+    write(2, "$ ", 2);
+  }
+
+    memset(buf, 0, nbuf);
+    gets(buf, nbuf);
+
+    if (buf[0] == 0) // EOF
+        return -1;
+
+    // detect tab
+    if (strchr(buf, '\t')) {
+        printf("Tab pressed\n");
+    }
+
+     if (buf[0] != '\n' && buf[0] != '\0') {
+    int idx = history_count % HISTORY_SIZE;
+    strcpy(history[idx], buf);   
+    history_count++;
+  }
+    return 0;
 }
+
 
 int
 main(void)
@@ -168,7 +191,21 @@ main(void)
       cmd[strlen(cmd)-1] = 0;  // chop \n
       if(chdir(cmd+3) < 0)
         fprintf(2, "cannot cd %s\n", cmd+3);
-    } else {
+    }
+else if(strncmp(cmd, "wait", 4) == 0 &&
+            (cmd[4] == '\0' || cmd[4] == '\n' || cmd[4] == ' ')) {
+    // this will wait for any child that has finished
+    wait(0);
+}
+ else if (strcmp(cmd, "history\n") == 0 || strcmp(cmd, "history") == 0) {
+    int start = history_count > HISTORY_SIZE ? history_count - HISTORY_SIZE : 0;
+    for (int i = start; i < history_count; i++) {
+      printf("%d: %s", i+1, history[i % HISTORY_SIZE]);
+    }
+    continue;   // don’t fork
+  }
+
+ else {
       if(fork1() == 0)
         runcmd(parsecmd(cmd));
       wait(0);
