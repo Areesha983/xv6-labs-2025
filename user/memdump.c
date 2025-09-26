@@ -60,22 +60,52 @@ main(int argc, char *argv[])
 void
 memdump(char *fmt, char *data)
 {
-  // Your code here
-  for (int i = 0; data[i] != '\0'; i++) {
-    unsigned char c = (unsigned char)data[i];
+  // Your code her{
+  char *p = data;
 
-    switch (fmt[0]) {      
-    case 'x':              
-      printf("%02x ", c);
+  for (int i = 0; fmt[i] != '\0'; i++) {
+    char f = fmt[i];
+
+    switch (f) {
+    case 'i': { // 4-byte int
+      int val = *(int*)p;
+      printf("%d\n", val);
+      p += sizeof(int);
       break;
-    case 'c':
-      printf("%c", c);
+    }
+    case 'p': {
+      uint64 val = *(uint64*)p;
+      printf("%lx\n", (unsigned long)val);   // <-- fixed here
+      p += sizeof(uint64);
       break;
-    default:               
-      printf("%02x ", c);
+    }
+    case 'h': { // 2-byte short
+      short val = *(short*)p;
+      printf("%d\n", val);
+      p += sizeof(short);
+      break;
+    }
+    case 'c': { // 1-byte char
+      char val = *p;
+      printf("%c\n", val);
+      p += 1;
+      break;
+    }
+    case 's': { // pointer to string
+      char *str = *(char**)p;      // read a char* from memory
+      printf("%s\n", str);
+      p += sizeof(char*);
+      break;
+    }
+    case 'S': { // inline string
+      printf("%s\n", p);
+      p += strlen(p) + 1;
+      break;
+    }
+    default:
+      printf("Unknown format: %c\n", f);
       break;
     }
   }
-  printf("\n");
-
 }
+
