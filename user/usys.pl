@@ -38,6 +38,8 @@ entry("link");
 entry("mkdir");
 entry("chdir");
 entry("dup");
+entry("interpose");
+
 entry("getpid");
 entry("sbrk");
 entry("pause");

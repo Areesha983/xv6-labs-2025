@@ -3,6 +3,7 @@
 // Mostly argument checking, since we don't trust
 // user code, and calls into file.c and fs.c.
 //
+#include "syscall.h"
 
 #include "types.h"
 #include "riscv.h"
@@ -15,6 +16,16 @@
 #include "sleeplock.h"
 #include "file.h"
 #include "fcntl.h"
+static int
+kstrcmp(const char *p, const char *q)
+{
+  while (*p && *p == *q) {
+    p++;
+    q++;
+  }
+  return (uchar)*p - (uchar)*q;
+}
+
 
 // Fetch the nth word-sized system call argument as a file descriptor
 // and return both the descriptor and the corresponding struct file.
@@ -309,6 +320,21 @@ sys_open(void)
   struct file *f;
   struct inode *ip;
   int n;
+struct proc *p = myproc();
+
+// If open is masked
+if (p->mask & (1 << SYS_open)) {
+  // Check if pathname matches allowed_path
+  char kpath[MAXPATH];
+  if (argstr(0, kpath, MAXPATH) < 0)
+    return -1;
+
+  if (kstrcmp(kpath, p->allowed_path) != 0) {
+
+    printf("Sandbox: blocked open %s\n", kpath);
+    return -1; // deny
+  }
+}
 
   argint(1, &omode);
   if((n = argstr(0, path, MAXPATH)) < 0)
@@ -437,6 +463,19 @@ sys_exec(void)
   char path[MAXPATH], *argv[MAXARG];
   int i;
   uint64 uargv, uarg;
+struct proc *p = myproc();
+
+// If exec is masked
+if (p->mask & (1 << SYS_exec)) {
+  char kpath[MAXPATH];
+  if (argstr(0, kpath, MAXPATH) < 0)
+    return -1;
+
+  if (kstrcmp(kpath, p->allowed_path) != 0) {
+    printf("Sandbox: blocked exec %s\n", kpath);
+    return -1; // deny
+  }
+}
 
   argaddr(1, &uargv);
   if(argstr(0, path, MAXPATH) < 0) {

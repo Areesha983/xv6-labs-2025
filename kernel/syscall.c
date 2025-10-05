@@ -90,6 +90,8 @@ extern uint64 sys_exec(void);
 extern uint64 sys_fstat(void);
 extern uint64 sys_chdir(void);
 extern uint64 sys_dup(void);
+extern uint64 sys_interpose(void);
+
 extern uint64 sys_getpid(void);
 extern uint64 sys_sbrk(void);
 extern uint64 sys_pause(void);
@@ -115,6 +117,7 @@ static uint64 (*syscalls[])(void) = {
 [SYS_fstat]   sys_fstat,
 [SYS_chdir]   sys_chdir,
 [SYS_dup]     sys_dup,
+[SYS_interpose] sys_interpose,
 [SYS_getpid]  sys_getpid,
 [SYS_sbrk]    sys_sbrk,
 [SYS_pause]   sys_pause,
@@ -135,11 +138,15 @@ syscall(void)
   struct proc *p = myproc();
 
   num = p->trapframe->a7;
-  if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
-    // Use num to lookup the system call function for num, call it,
-    // and store its return value in p->trapframe->a0
-    p->trapframe->a0 = syscalls[num]();
+if (num > 0 && num < NELEM(syscalls) && syscalls[num]) {
+  if (p->interpose_mask & (1 << num)) {
+    // syscall is blocked
+    p->trapframe->a0 = -1;
   } else {
+    // normal execution
+    p->trapframe->a0 = syscalls[num]();
+  }
+} else {
     printf("%d %s: unknown sys call %d\n",
             p->pid, p->name, num);
     p->trapframe->a0 = -1;

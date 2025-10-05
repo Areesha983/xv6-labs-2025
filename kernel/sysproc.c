@@ -105,3 +105,21 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+uint64
+sys_interpose(void)
+{
+  int mask;
+  char path[MAXPATH];
+
+  // Get arguments: mask (int) and allowed_path (string)
+  argint(0, &mask);
+
+  if (argstr(1, path, MAXPATH) < 0)
+    return -1;
+
+  // Store in current process struct
+  myproc()->mask = mask;
+  safestrcpy(myproc()->allowed_path, path, MAXPATH);
+
+  return 0;
+}

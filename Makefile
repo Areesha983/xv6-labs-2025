@@ -199,8 +199,10 @@ UPROGS=\
         $U/_sixfive\
         $U/_memdump\
         $U/_find\
-        $U/_uptime
-
+        $U/_uptime\
+        $U/_sandbox\
+        $U/_attack\
+        $U/_secret
 ifeq ($(LAB),syscall)
 UPROGS += \
 	$U/_attack\

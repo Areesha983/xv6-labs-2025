@@ -131,7 +131,7 @@ found:
     release(&p->lock);
     return 0;
   }
-
+p->syscall_mask = 0;
   // An empty user page table.
   p->pagetable = proc_pagetable(p);
   if(p->pagetable == 0){
@@ -271,7 +271,9 @@ kfork(void)
     release(&np->lock);
     return -1;
   }
+
   np->sz = p->sz;
+np->interpose_mask = p->interpose_mask;
 
   // copy saved user registers.
   *(np->trapframe) = *(p->trapframe);
@@ -298,6 +300,7 @@ kfork(void)
   acquire(&np->lock);
   np->state = RUNNABLE;
   release(&np->lock);
+np->syscall_mask = p->syscall_mask;
 
   return pid;
 }

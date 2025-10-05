@@ -1,0 +1,7 @@
+Q1: Which function called syscall?
+ANS. usertrap in at kernel/trap.c:68
+
+Q2: What is the value of p->trapframe->a7 and what does it represent?
+ANS. 0x87f56000 -> represents the write() system call.
+
+$4=0x200000022
