@@ -145,6 +145,28 @@ walkaddr(pagetable_t pagetable, uint64 va)
 void
 vmprint(pagetable_t pagetable) {
   // your code here
+  printf("page table %p\n", pagetable);
+
+  for(int i = 0; i < 512; i++){
+    pte_t pte = pagetable[i];
+    if(pte & PTE_V){
+      printf("..%d: pte 0x%lx pa 0x%lx\n", i, pte, PTE2PA(pte));
+      pagetable_t second = (pagetable_t)PTE2PA(pte);
+      for(int j = 0; j < 512; j++){
+        pte = second[j];
+        if(pte & PTE_V){
+          printf(".. ..%d: pte 0x%lx pa 0x%lx\n", j, pte, PTE2PA(pte));
+          pagetable_t third = (pagetable_t)PTE2PA(pte);
+          for(int k = 0; k < 512; k++){
+            pte = third[k];
+            if(pte & PTE_V){
+              printf(".. .. ..%d: pte 0x%lx pa 0x%lx\n", k, pte, PTE2PA(pte));
+            }
+          }
+        }
+      }
+    }
+  }
 }
 #endif
 

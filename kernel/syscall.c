@@ -10,6 +10,8 @@
 #include "sleeplock.h"
 #include "file.h"
 
+
+
 // Fetch the uint64 at addr from the current process.
 int
 fetchaddr(uint64 addr, uint64 *ip)
@@ -114,6 +116,7 @@ extern uint64 sys_recv(void);
 #ifdef LAB_PGTBL
 extern uint64 sys_pgpte(void);
 extern uint64 sys_kpgtbl(void);
+extern uint64 sys_pgaccess(void);
 #endif
 
 // An array mapping syscall numbers from syscall.h
@@ -149,6 +152,7 @@ static uint64 (*syscalls[])(void) = {
 #ifdef LAB_PGTBL
 [SYS_pgpte] sys_pgpte,
 [SYS_kpgtbl] sys_kpgtbl,
+[SYS_pgaccess] sys_pgaccess,
 #endif
 };
 
