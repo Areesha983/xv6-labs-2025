@@ -190,6 +190,10 @@ void            vmprint(pagetable_t);
 #endif
 #ifdef LAB_PGTBL
 pte_t*          pgpte(pagetable_t, uint64);
+void *superalloc(void);
+void superfree(void *pa);
+void superinit(void);
+int mappages_super(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm);
 #endif
 
 // plic.c

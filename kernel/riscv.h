@@ -364,6 +364,8 @@ typedef uint64 *pagetable_t; // 512 PTEs
 #define SUPERPGSIZE (2 * (1 << 20)) // bytes per page
 #define SUPERPGROUNDUP(sz)  (((sz)+SUPERPGSIZE-1) & ~(SUPERPGSIZE-1))
 #define SUPERPGROUNDDOWN(sz) (SUPERPGROUNDUP(sz)-SUPERPGSIZE)
+#define SUPERPG_PGNUM (SUPERPGSIZE / PGSIZE)  // 512 pages in one superpage
+
 #endif
 
 #define PGROUNDUP(sz)  (((sz)+PGSIZE-1) & ~(PGSIZE-1))
@@ -399,3 +401,9 @@ typedef uint64 *pagetable_t; // 512 PTEs
 // Sv39, to avoid having to sign-extend virtual addresses
 // that have the high bit set.
 #define MAXVA (1L << (9 + 9 + 9 + 12 - 1))
+// Convert between physical and kernel virtual addresses
+#define P2V(pa) ((void *)((char *)(pa) + KERNBASE))
+#define PADDR(va) ((uint64)(va) - KERNBASE)
+
+#define V2P(va) ((uint64)(va) - KERNBASE)
+

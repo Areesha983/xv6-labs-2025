@@ -1,0 +1,3 @@
+ans) Other system calls such as uptime(), getppid(), or time-related calls (like gettimeofday())
+ could also be made faster using the shared page, since they only return static or periodically
+ updated kernel information that can safely be exposed to userspace in read-only form.

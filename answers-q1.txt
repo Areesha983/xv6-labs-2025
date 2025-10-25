@@ -1,0 +1,40 @@
+ans)
+ 1. va 0 → pte 0x21FCF45B, pa 0x87F3D000, perm 0x5B
+
+This is the start of the user address space (code/data segment).
+
+The flags (0x5B) include Valid, Read, Write, User, Accessed, Dirty.
+
+It maps to a physical page at 0x87F3D000.
+
+2. va 0x1000 → pte 0x21FCE85B, pa 0x87F3A000, perm 0x5B
+
+Next user page after the first one.
+
+Same permission bits as the first page.
+
+Different physical address, showing that user virtual pages are not stored contiguously in physical memory.
+
+3. va 0xFFFFD000 → pte 0x0, pa 0x0, perm 0x0
+
+This address is not mapped to any physical memory.
+
+Represents an unused or guard page.
+
+4. va 0xFFFFE000 → pte 0x21FD80C7, pa 0x87F60000, perm 0xC7
+
+Near the top of the user address space.
+
+Flags (0xC7) include Valid, Read, Write, Execute, User, Accessed, Dirty.
+
+Most likely represents the user stack page.
+
+5. va 0xFFFFF000 → pte 0x20001C4B, pa 0x80007000, perm 0x4B
+
+The very top of user virtual memory.
+
+Flags (0x4B) include Valid, Read, Execute, User, Accessed.
+
+This is the trampoline page used for switching between user and kernel mode.
+
+Physical address 0x80007000 is fixed for all processes.
