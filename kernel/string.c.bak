@@ -1,7 +1,4 @@
 #include "types.h"
-#include "riscv.h"
-#include "defs.h"
-#include "memlayout.h"
 
 void*
 memset(void *dst, int c, uint n)
@@ -33,29 +30,22 @@ memcmp(const void *v1, const void *v2, uint n)
 void*
 memmove(void *dst, const void *src, uint n)
 {
-  const char *s = src;
-  char *d = dst;
-
-  uint64 dd = (uint64)d;
-  uint64 ss = (uint64)s;
-
-  // Debug check for invalid addresses
-  if(dd < 0x80000000UL || ss < 0x80000000UL || dd > MAXVA || ss > MAXVA){
-    printf("DBG memmove bad addr: dst=%p src=%p len=%d\n", (void*)dd, (void*)ss, n);
-  }
+  const char *s;
+  char *d;
 
   if(n == 0)
     return dst;
-
+  
+  s = src;
+  d = dst;
   if(s < d && s + n > d){
     s += n;
     d += n;
     while(n-- > 0)
       *--d = *--s;
-  } else {
+  } else
     while(n-- > 0)
       *d++ = *s++;
-  }
 
   return dst;
 }

@@ -92,18 +92,19 @@ kalloc(void)
 void
 superinit(void)
 {
-  // Suppose freemem_high is the current free memory top (physical)
-  // We need to take a chunk at the end of physical memory:
-  extern char end[]; // from linker
-  uint64 top = (uint64)PHYSTOP; // or some variable you maintain
-  // Find an aligned location to carve SUPER_POOL_N*SUPERPGSIZE bytes
+  extern char end[];  // provided by the linker (end of kernel)
+  uint64 top = PHYSTOP;  // top of physical memory, defined in memlayout.h
   uint64 size = (uint64)SUPER_POOL_N * SUPERPGSIZE;
+
+  // Align base downward to 2MB boundary
   uint64 base = (top - size) & ~(SUPERPGSIZE - 1);
+
   // map those pages into kernel virtual addresses and add them to pool
   for (int i = 0; i < SUPER_POOL_N; i++) {
-    char *kva = (char *)P2V(base + i * SUPERPGSIZE); // P2V macro
+    char *kva = (char *)P2V(base + i * SUPERPGSIZE);
     superpool[i] = kva;
   }
+
   superpool_count = SUPER_POOL_N;
 }
 
@@ -111,10 +112,13 @@ superinit(void)
 void *
 superalloc(void)
 {
-  if (superpool_count == 0) return 0;
+  if (superpool_count == 0)
+    return 0;
+
   void *kva = superpool[--superpool_count];
   superpool[superpool_count] = 0;
-  // optionally zero the memory
+
+  // zero the memory
   memset(kva, 0, SUPERPGSIZE);
   return kva;
 }
@@ -124,8 +128,7 @@ void
 superfree(void *kva)
 {
   if (superpool_count >= SUPER_POOL_N) {
-    // pool full; leak? or panic
-    return;
+    panic("superfree: pool overflow");
   }
   superpool[superpool_count++] = kva;
 }

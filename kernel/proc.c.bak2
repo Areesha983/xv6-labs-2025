@@ -1,5 +1,4 @@
 #include "types.h"
-//extern int printf(const char*, ...);
 #include "param.h"
 #include "memlayout.h"
 #include "riscv.h"
@@ -639,7 +638,7 @@ either_copyout(int user_dst, uint64 dst, void *src, uint64 len)
   if(user_dst){
     return copyout(p->pagetable, dst, src, len);
   } else {
-    
+    cprintf("DBG proc memmove A: dst=%p src=%p len=%d\n", (void*)dst, (void*)src, len);
 memmove((char *)dst, src, len);
     return 0;
   }
@@ -655,7 +654,7 @@ either_copyin(void *dst, int user_src, uint64 src, uint64 len)
   if(user_src){
     return copyin(p->pagetable, dst, src, len);
   } else {
-    
+    cprintf("DBG proc memmove B: dst=%p src=%p len=%d\n", (void*)dst, (void*)src, len);
 memmove(dst, (char*)src, len);
     return 0;
   }

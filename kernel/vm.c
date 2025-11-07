@@ -98,24 +98,27 @@ walk(pagetable_t pagetable, uint64 va, int alloc)
   if(va >= MAXVA)
     panic("walk");
 
-  for(int level = 2; level > 0; level--) {
+  for (int level = 2; level > 0; level--) {
     pte_t *pte = &pagetable[PX(level, va)];
-    if(*pte & PTE_V) {
-      pagetable = (pagetable_t)PTE2PA(*pte);
+
+    if (*pte & PTE_V) {
+      // Convert physical address of the next-level pagetable to virtual
+      pagetable = (pagetable_t)P2V(PTE2PA(*pte));
 #ifdef LAB_PGTBL
-      if(PTE_LEAF(*pte)) {
+      if (PTE_LEAF(*pte)) {
         return pte;
       }
 #endif
     } else {
-      if(!alloc || (pagetable = (pde_t*)kalloc()) == 0)
+      if (!alloc || (pagetable = (pde_t*)kalloc()) == 0)
         return 0;
       memset(pagetable, 0, PGSIZE);
-      *pte = PA2PTE(pagetable) | PTE_V;
+      *pte = PA2PTE(V2P(pagetable)) | PTE_V;
     }
   }
   return &pagetable[PX(0, va)];
 }
+
 
 // Look up a virtual address, return the physical address,
 // or 0 if not mapped.
@@ -123,22 +126,32 @@ walk(pagetable_t pagetable, uint64 va, int alloc)
 uint64
 walkaddr(pagetable_t pagetable, uint64 va)
 {
-  pte_t *pte;
-  uint64 pa;
-
-  if(va >= MAXVA)
+  if (va >= MAXVA)
     return 0;
 
-  pte = walk(pagetable, va, 0);
-  if(pte == 0)
-    return 0;
-  if((*pte & PTE_V) == 0)
-    return 0;
-  if((*pte & PTE_U) == 0)
-    return 0;
-  pa = PTE2PA(*pte);
-  return pa;
+  for (int level = 2; level >= 0; level--) {
+    pte_t *pte = &pagetable[PX(level, va)];
+    if (!(*pte & PTE_V))
+      return 0;
+
+#ifdef LAB_PGTBL
+    if (*pte & (PTE_R | PTE_W | PTE_X)) {
+      uint64 pa = PTE2PA(*pte);
+      uint64 offset;
+      if (level == 1)
+        offset = va & (SUPERPGSIZE - 1);
+      else
+        offset = va & (PGSIZE - 1);
+      return pa + offset;
+    }
+#endif
+
+    pagetable = (pagetable_t)P2V(PTE2PA(*pte));
+  }
+
+  return 0;
 }
+
 
 
 #if defined(LAB_PGTBL) || defined(SOL_MMAP) || defined(SOL_COW)
@@ -258,12 +271,11 @@ uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free)
     if ((*pte & PTE_V) && (*pte & (PTE_R | PTE_W | PTE_X)) &&
         (a % SUPERPGSIZE) == 0 &&
         (va + npages * PGSIZE - a) >= SUPERPGSIZE) {
-
       uint64 pa = PTE2PA(*pte);
       *pte = 0;
 
       if (do_free) {
-        void *kva_super = (void*)P2V(pa);
+        void *kva_super = (void*)P2V(pa);  // convert PA -> KVA for superfree
         superfree(kva_super);
       }
 
@@ -277,12 +289,13 @@ uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free)
 
     if(do_free){
       uint64 pa = PTE2PA(*pte);
-      kfree((void*)pa);
+      // pa is a physical address — kfree expects a kernel-virtual pointer,
+      // so convert with P2V.
+      kfree((void*)P2V(pa));
     }
     *pte = 0;
   }
 }
-
 
 
 // Allocate PTEs and physical memory to grow process from oldsz to
@@ -489,18 +502,19 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
     }
 
     if((pte = walk(pagetable, va0, 0)) == 0) {
-      // printf("copyout: pte should exist %lx %ld\n", dstva, len);
+      // pte should exist
       return -1;
     }
 
-
-    // forbid copyout over read-only user text pages.
+    // forbid copyout (kernel -> user) to a page that is not writable
     if((*pte & PTE_W) == 0)
       return -1;
-    
+
     n = PGSIZE - (dstva - va0);
     if(n > len)
       n = len;
+
+    /* pa0 is a physical address; convert to kernel virtual before writing */
     memmove((void *)P2V(pa0 + (dstva - va0)), src, n);
 
     len -= n;
@@ -557,7 +571,8 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
     if(n > max)
       n = max;
 
-    char *p = (char *) (pa0 + (srcva - va0));
+    /* pa0 is physical — convert to kernel virtual before dereferencing */
+    char *p = (char *) P2V(pa0 + (srcva - va0));
     while(n > 0){
       if(*p == '\0'){
         *dst = '\0';
@@ -580,6 +595,7 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
     return -1;
   }
 }
+
 
 
 
