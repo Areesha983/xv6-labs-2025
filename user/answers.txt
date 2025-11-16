@@ -1,0 +1,25 @@
+
+Q2. Is there a way to eliminate the special TRAPFRAME page mapping?
+No, the trapframe page cannot be eliminated because it plays a critical role during the transition from user
+mode to kernel mode. When a trap occurs, the processor jumps to uservec, which still runs using the user
+page table. At this moment, the kernel page table is not active yet, so uservec must save all user registers
+to a memory location that is accessible under the user’s own page table.
+ The trapframe page is the only safeand consistent place that both the kernel and user page tables map at a fixed address.
+ If we attempted to store the registers on the kernel stack or inside the proc structure, this would fail because those memory
+locations are only mapped in the kernel page table, which is not yet in use during the trap entry. Therefore,
+without the trapframe being mapped into every user address space, the CPU would have nowhere to save
+user registers before switching page tables, and trap handling would not work correctly. For this reason, the
+special trapframe page is essential and cannot be removed.
+
+Q3. Could xv6 be modified to eliminate the special TRAMPOLINE page?
+In theory the trampoline page could be removed, but in practice it is not feasible and would make the
+system more complex and error-prone. The trampoline exists because trap entry and trap return
+ code mustlive at a fixed virtual address that is identically mapped in every user page table.
+ This fixed mapping allows the CPU to jump into small pieces of privileged code that save the user registers, switch from the user page
+table to the kernel page table, and finally enter the kernel safely. If the trampoline were removed, the kernel
+would need to expose parts of its address space to user page tables or duplicate trap-entry code insideevery process, 
+both of which violate isolation principles and introduce unnecessary complexity. The
+trampoline solves the “page table switching” problem cleanly by placing a single shared page of code at a
+stable, well-known address visible in every user page table. Although it is theoretically possible to redesign
+xv6 to avoid the trampoline, such a design would be insecure, inefficient, and far more complex. Therefore, in
+practical terms, the trampoline page is necessary and should not be removed.
